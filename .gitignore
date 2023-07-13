@@ -1,0 +1,5 @@
+imagery
+shps
+*.ipynb
+*ipynb*
+__pycache__
