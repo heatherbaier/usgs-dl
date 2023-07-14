@@ -2,7 +2,7 @@
 
 ## Instructions to set up code and data folders
 ### Getting the Code
-1. Log into HPC using ```ssh <WM_USERNAME>@<CLUSTER>.sciclone.wm.edu``` replacing cluster within one of ```vortex``` or ```bora```
+1. Log into HPC using ```ssh <WM_USERNAME>@<CLUSTER>.sciclone.wm.edu``` replacing <CLUSTER> within one of ```vortex``` or ```bora```
 2. Once you log int, you'll be in ```/sciclone/home/<WM_USERNAME>/```. Make a new folder called ```usgs``` by running ```mkdir usgs``` and navigate into it using ```cd usgs```
 3. Initialize git by running:
 ```
@@ -39,3 +39,14 @@ mkdir SLV
 ```
 scp -r /Users/heatherbaier/Downloads/geo2_mw1998_2008 hmbaier@vortex.sciclone.wm.edu:/sciclone/geounder/hmbaier/usgs/shps/MWI
 ```
+
+## Instructions to download imagery
+1. The dl.py file is the main file used to control the imagery download. It takes two command line arguments:
+    - ISO: the ISO3c for the country you are currelty working with (i.e. SLV for El Salvador)
+    - The year the cesus was taken for that country. Get this from the to_dl.csv file. In this case of a country that appears twice like Ecuador, run the script first with ECU and 2001 as the arguments and then with ECU and 2010.
+2. Replace the base_dir with the folder you set up on ```geounder```
+3. Replace the shapefile path in the gpd.read_file() line
+4. Replace the USGS username and password credentials wtih your own.
+5. Replace the command liine arguments in the job script with the correct ISO and year and run using ```qsub job```
+6. Check the status of your job using ```qsu```
+7. The jobV file has the correct MPI path for Vortex and the jobB file has the correct MPI path for Bora.
