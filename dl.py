@@ -9,26 +9,16 @@ import geopandas as gpd
 import rasterio as rio
 import pandas as pd
 import argparse
+import calendar
 import tarfile
 import shapely
-# import pygee
 import os
 
 from utils import *
 
 
-
-# import geopandas as gpd
-import calendar
-# import pygee
-import os
-
-# from utils import *
-
-
 def chunker_list(seq, size):
     return (seq[i::size] for i in range(size))
-
 
 
 if __name__ == "__main__":
@@ -38,6 +28,19 @@ if __name__ == "__main__":
     parser.add_argument('year', type = int)
     args = parser.parse_args()
     
+    # Your USGS  credentials
+    username = "hmbaier"
+    password = "930941741Hb."
+
+    ee = EarthExplorer(username, password)
+
+    # Initialize a new API instance
+    api = API(username, password)
+
+    # Perform a request
+    response = api.request(endpoint="dataset-catalogs")
+
+
     for year in range(args.year - 5, args.year):
         
         for month in range(1, 13):
@@ -46,7 +49,7 @@ if __name__ == "__main__":
             
             print(all_dates)
     
-            base_dir = f"/rapids/notebooks/sciclone/geograd/Heather/clean_dl/imagery/{args.ISO}"
+            base_dir = f"/sciclone/geounder/hmbaier/usgs/imagery/{args.ISO}"
 
             dates = GetDays(all_dates[0], all_dates[1])
 
@@ -58,6 +61,9 @@ if __name__ == "__main__":
 
             print(all_dates, download_dir, unzip_dir, mosaic_dir, "\n")
             
+            if not os.path.exists(base_dir):
+                os.mkdir(base_dir)
+
             if not os.path.exists(year_dir):
                 os.mkdir(year_dir)
 
@@ -73,31 +79,35 @@ if __name__ == "__main__":
             if not os.path.exists(mosaic_dir):
                 os.mkdir(mosaic_dir)
 
-            shp = gpd.read_file("/rapids/notebooks/sciclone/geograd/Heather/clean_dl/shps/NPL/geo2_np2001_2011.shp")
+            shp = gpd.read_file("/sciclone/geounder/hmbaier/usgs/shps/MWI/geo2_mw1998_2008.shp")
             shp["centroid"] = shp.geometry.centroid
             shp["bbox"] = shp["geometry"].apply(lambda x: calc_bbox(x))
             shp.head()
 
-            # Your USGS  credentials
-            username = "hmbaier"
-            password = "930941741Hb."
+            log_path = f"logs/log_{args.ISO}_{all_dates[0]}_{all_dates[1]}.txt"
 
-            ee = EarthExplorer(username, password)
+            with open(log_path, "a") as f:
+                f.write(str(response) + "\n")
 
-            # Initialize a new API instance
-            api = API(username, password)
+            # print(response)
 
-            # Perform a request
-            response = api.request(endpoint="dataset-catalogs")
-            print(response)
+            scenes = search_for_imagery(api, shp, ["landsat_tm_c2_l1"], dates[0], dates[1], log_path)
+            # print(scenes.head())
 
-            scenes = search_for_imagery(api, shp, ["landsat_tm_c2_l1"], dates[0], dates[1])
-            print(scenes.head())
+            if scenes is None:
 
-            scenes.to_csv(f"{args.ISO}_{all_dates[0]}_{all_dates[1]}_scenes.csv", index = False)
+                with open(log_path, "a") as f:
+                    f.write(f"NO IMAGERY FOR {all_dates[0]} {all_dates[1]} \n")
 
-            download_imagery(ee, scenes, download_dir)
+                continue
 
-            untar_imagery(download_dir, unzip_dir)
+            with open(log_path, "a") as f:
+                f.write(str(scenes.head()) + "\n")            
+
+            scenes.to_csv(f"scenes/{args.ISO}_{all_dates[0]}_{all_dates[1]}_scenes.csv", index = False)
+
+            download_imagery(ee, scenes, download_dir, log_path)
+
+            untar_imagery(download_dir, unzip_dir, log_path)
 
             mosaic_imagery(scenes, mosaic_dir, unzip_dir, shp, all_dates)         

@@ -18,7 +18,7 @@ def calc_bbox(x):
     return shapely.geometry.box(*x.bounds, ccw=True)
 
 
-def search_for_imagery(api, shp, ics, date1, date2):
+def search_for_imagery(api, shp, ics, date1, date2, log_path):
     
     all_scenes = []
 
@@ -42,7 +42,7 @@ def search_for_imagery(api, shp, ics, date1, date2):
                     longitude = lng,
                     start_date = date1,
                     end_date = date2,
-                    max_cloud_cover = 50
+                    max_cloud_cover = 100
                 )
 
                 # Create a DataFrame from the scenes
@@ -56,17 +56,23 @@ def search_for_imagery(api, shp, ics, date1, date2):
 
         except:
 
-            print(row.GEOLEVEL2, " has no imagery.")
+            with open(log_path, "a") as f:
+                f.write(row.GEOLEVEL2 + " has no imagery. \n")   
 
-    all_scenes = pd.concat(all_scenes)
+            # print(row.GEOLEVEL2, " has no imagery.")
 
-    return all_scenes
+    if len(all_scenes) != 0:
+        all_scenes = pd.concat(all_scenes)
+        return all_scenes
+
+    else:
+        return None
 
 
 # scenes = search_for_imagery(api, shp, ["landsat_tm_c2_l1"])
 
 
-def download_imagery(ee, all_scenes, output_dir):
+def download_imagery(ee, all_scenes, output_dir, log_path):
     
     for display_id in all_scenes["display_id"].unique():
 
@@ -74,7 +80,10 @@ def download_imagery(ee, all_scenes, output_dir):
 
             ee.download(display_id, output_dir = output_dir)
 
-            print(display_id)
+            with open(log_path, "a") as f:
+                f.write(str(display_id) + "\n")                  
+
+            # print(display_id)
 
         except:
 
@@ -83,13 +92,16 @@ def download_imagery(ee, all_scenes, output_dir):
 # download_imagery(scenes, "data2")
 
 
-def untar_imagery(data_dir, output_dir):
+def untar_imagery(data_dir, output_dir, log_path):
     
     for file in os.listdir(data_dir):
 
         if ".ipynb" not in file:
 
-            print(file)
+            with open(log_path, "a") as f:
+                f.write(str(file) + "\n")                  
+
+            # print(file)
             
             try:
 

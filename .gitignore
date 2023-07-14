@@ -3,3 +3,6 @@ shps
 *.ipynb
 *ipynb*
 __pycache__
+logs
+scenes
+archive
